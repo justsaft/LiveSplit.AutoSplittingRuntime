@@ -12,10 +12,10 @@ namespace LiveSplit.AutoSplittingRuntime;
 
 public class ASRComponent : LogicComponent
 {
-    private readonly TimerModel model;
-    private readonly ComponentSettings settings;
-    private readonly Form parentForm;
-    private Timer updateTimer;
+    private readonly TimerModel _model;
+    private readonly ComponentSettings _settings;
+    private readonly Form _parentForm;
+    private Timer _updateTimer;
 
     static ASRComponent()
     {
@@ -28,54 +28,54 @@ public class ASRComponent : LogicComponent
 
     public ASRComponent(LiveSplitState state)
     {
-        parentForm = state.Form;
+        _parentForm = state.Form;
 
-        model = new TimerModel() { CurrentState = state };
+        _model = new TimerModel() { CurrentState = state };
 
-        settings = new ComponentSettings(model);
+        _settings = new ComponentSettings(_model);
 
         InitializeUpdateTimer();
     }
 
     public ASRComponent(LiveSplitState state, string scriptPath)
     {
-        model = new TimerModel() { CurrentState = state };
+        _model = new TimerModel() { CurrentState = state };
 
-        settings = new ComponentSettings(model, scriptPath);
+        _settings = new ComponentSettings(_model, scriptPath);
 
         InitializeUpdateTimer();
     }
 
     private void InitializeUpdateTimer()
     {
-        updateTimer = new Timer() { Interval = 15 };
-        updateTimer.Elapsed += UpdateTimerElapsed;
-        updateTimer.Start();
+        _updateTimer = new Timer() { Interval = 15 };
+        _updateTimer.Elapsed += UpdateTimerElapsed;
+        _updateTimer.Start();
     }
 
     public override string ComponentName => "Auto Splitting Runtime";
 
     public override void Dispose()
     {
-        updateTimer.Elapsed -= UpdateTimerElapsed;
-        updateTimer.Dispose();
-        updateTimer = null;
-        settings.runtime?.Dispose();
+        _updateTimer.Elapsed -= UpdateTimerElapsed;
+        _updateTimer.Dispose();
+        _updateTimer = null;
+        _settings.runtime?.Dispose();
     }
 
     public override XmlNode GetSettings(XmlDocument document)
     {
-        return settings.GetSettings(document);
+        return _settings.GetSettings(document);
     }
 
     public override Control GetSettingsControl(LayoutMode mode)
     {
-        return settings;
+        return _settings;
     }
 
     public override void SetSettings(XmlNode settings)
     {
-        this.settings.SetSettings(settings);
+        _settings.SetSettings(settings);
     }
 
     public override void Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode) { }
@@ -87,50 +87,50 @@ public class ASRComponent : LogicComponent
         // Disable timer, to wait for execution of this iteration to
         // finish. This can be useful if blocking operations like
         // showing a message window are used.
-        updateTimer?.Stop();
+        _updateTimer?.Stop();
 
         try
         {
             InvokeIfNeeded(() =>
             {
-                if (settings.runtime != null)
+                if (_settings.runtime != null)
                 {
-                    settings.runtime.Step();
+                    _settings.runtime.Step();
 
                     try
                     {
                         if (
-                            settings.previousMap == null
-                            || settings.previousWidgets == null
-                            || settings.runtime.AreSettingsChanged(settings.previousMap, settings.previousWidgets)
+                            _settings.previousMap == null
+                            || _settings.previousWidgets == null
+                            || _settings.runtime.AreSettingsChanged(_settings.previousMap, _settings.previousWidgets)
                         )
                         {
-                            settings.BuildTree();
+                            _settings.BuildTree();
                         }
                     }
                     catch { }
 
                     // Poll the tick rate and modify the update interval if it has been changed
-                    double tickRate = settings.runtime.TickRate().TotalMilliseconds;
+                    double tickRate = _settings.runtime.TickRate().TotalMilliseconds;
 
-                    if (updateTimer != null && tickRate != updateTimer.Interval)
+                    if (_updateTimer != null && tickRate != _updateTimer.Interval)
                     {
-                        updateTimer.Interval = tickRate;
+                        _updateTimer.Interval = tickRate;
                     }
                 }
             });
         }
         finally
         {
-            updateTimer?.Start();
+            _updateTimer?.Start();
         }
     }
 
     private void InvokeIfNeeded(Action x)
     {
-        if (parentForm != null && parentForm.InvokeRequired)
+        if (_parentForm != null && _parentForm.InvokeRequired)
         {
-            parentForm.Invoke(x);
+            _parentForm.Invoke(x);
         }
         else
         {
